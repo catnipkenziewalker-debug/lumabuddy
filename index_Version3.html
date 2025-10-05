@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LumaBuddy — Friendly Fake AI for Kids</title>
+<style>
+  :root{
+    --bg:#f0f8ff; --card:#ffffff; --accent:#6cc1ff; --muted:#4b5563;
+    --bubble-kid:#dff8ff; --bubble-me:#ffdede;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#eaf8ff 0%, #f7fbff 100%);color:#05263a}
+  .wrap{max-width:980px;margin:24px auto;padding:18px;background:var(--card);border-radius:14px;box-shadow:0 8px 30px rgba(6,22,40,0.08)}
+  header{display:flex;align-items:center;gap:12px}
+  .logo{width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,#6cc1ff,#9b7bff);display:flex;align-items:center;justify-content:center;color:#012; font-weight:800; font-size:20px}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:6px 0 14px;color:var(--muted);font-size:14px}
+  .app{display:grid;grid-template-columns:1fr 380px;gap:18px}
+  .chat{background:linear-gradient(180deg,#ffffff,#f0f8ff);padding:12px;border-radius:10px;min-height:520px;display:flex;flex-direction:column}
+  .messages{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:78%;padding:10px;border-radius:12px}
+  .msg.ai{align-self:flex-start;background:var(--bubble-kid);border:1px solid rgba(6,22,40,0.03)}
+  .msg.me{align-self:flex-end;background:var(--bubble-me);border:1px solid rgba(6,22,40,0.03)}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .controls{display:flex;gap:8px;padding-top:10px;align-items:center}
+  input[type="text"]{flex:1;padding:10px;border-radius:10px;border:1px solid #d7eefa}
+  button.btn{background:var(--accent);border:none;padding:10px 12px;border-radius:10px;color:#012;font-weight:700;cursor:pointer}
+  .rightcol{display:flex;flex-direction:column;gap:12px}
+  .panel{background:#fff;padding:12px;border-radius:10px;border:1px solid #eef7ff}
+  canvas{width:100%;height:auto;border-radius:8px;border:1px solid #dff2ff;background:#dff8ff}
+  .small{font-size:13px;color:var(--muted)}
+  .voice-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .mode{display:inline-block;padding:6px 8px;border-radius:8px;background:#f1fbff;color:#036;border:1px solid #cfefff;cursor:pointer}
+  .kbd{background:#f8fbff;padding:6px 8px;border-radius:6px;border:1px solid #e6f5ff;color:#036;font-weight:700}
+  footer.note{margin-top:12px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap" role="application" aria-label="LumaBuddy for kids">
+  <header>
+    <div class="logo">LB</div>
+    <div>
+      <h1>LumaBuddy — Friendly Fake AI for Kids</h1>
+      <p class="lead">A fun, safe pretend AI that talks in a kind voice and draws happy pictures. Try typing <span class="kbd">/draw a rainbow cat</span> or press <span class="kbd">Make Picture</span>.</p>
+    </div>
+  </header>
+
+  <div class="app" role="main">
+    <div class="chat">
+      <div class="messages" id="messages">
+        <div class="msg ai"><div class="meta">LumaBuddy · friendly mode</div>Hello! I'm <strong>LumaBuddy</strong>. I love telling short stories and drawing silly pictures. Say <span class="kbd">/draw a rainbow</span> or ask me to tell a short rhyme.</div>
+      </div>
+
+      <div class="controls">
+        <input id="input" type="text" placeholder="Say something friendly... (try: /draw unicorn)" />
+        <button id="send" class="btn">Send</button>
+        <button id="drawBtn" class="btn" title="Make Picture">Make Picture</button>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center">
+        <div class="small">Kid-safe mode: <strong>ON</strong></div>
+        <div class="small">Voice: <select id="voiceSelect"></select></div>
+      </div>
+    </div>
+
+    <div class="rightcol">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>Picture Studio</strong>
+          <small class="small">Drawings are cute & simple (no photos)</small>
+        </div>
+        <canvas id="art" width="640" height="420" aria-label="Generated picture"></canvas>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="download" class="btn">Download PNG</button>
+          <button id="regenerate" class="btn" style="background:#9b7bff;color:#fff">Regenerate</button>
+        </div>
+        <p class="small" style="margin-top:8px">Tip: type <span class="kbd">/draw a happy dog</span> or click <span class="kbd">Make Picture</span>. The app uses shapes to make friendly scenes kids like.</p>
+      </div>
+
+      <div class="panel">
+        <strong>Short commands</strong>
+        <ul style="margin:8px 0 0 18px;padding:0">
+          <li class="small"><span class="kbd">/draw &lt;thing&gt;</span> — draw a picture inspired by the words</li>
+          <li class="small"><span class="kbd">/rhyme</span> — short kid-friendly rhyme</li>
+          <li class="small"><span class="kbd">/joke</span> — silly joke</li>
+          <li class="small"><span class="kbd">/help</span> — show help</li>
+        </ul>
+
+        <div class="voice-row">
+          <div class="small">Play voice on reply</div>
+          <button id="mute" class="btn" style="background:#ffb3b3">Mute</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">This is a pretend AI for play. It works fully in your browser with no servers.</footer>
+</div>
+
+<script>
+/* LumaBuddy — Kid-friendly fake AI with local picture generator + speech
+   - All client-side: no external calls required
+   - Picture generation: shapes on canvas (sun, clouds, rainbow, animal faces, house, trees)
+   - Speech synthesis: browser SpeechSynthesis API
+   - Commands: /draw, /rhyme, /joke, /help
+*/
+
+(() => {
+  const messages = document.getElementById('messages');
+  const input = document.getElementById('input');
+  const send = document.getElementById('send');
+  const drawBtn = document.getElementById('drawBtn');
+  const art = document.getElementById('art');
+  const ctx = art.getContext('2d');
+  const download = document.getElementById('download');
+  const regen = document.getElementById('regenerate');
+  const voiceSelect = document.getElementById('voiceSelect');
+  const muteBtn = document.getElementById('mute');
+
+  let lastDrawPrompt = 'a sunny field with a smiling sun';
+  let speakOn = true;
+  let currentVoice = null;
+
+  /* --- Speech setup --- */
+  function populateVoices() {
+    const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en') || v.lang.startsWith('en-'));
+    voiceSelect.innerHTML = '';
+    voices.forEach((v, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${v.name} — ${v.lang}`;
+      voiceSelect.appendChild(opt);
+    });
+    if (voices.length) {
+      voiceSelect.selectedIndex = 0;
+      currentVoice = voices[0];
+    }
+  }
+  populateVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
+
+  voiceSelect.addEventListener('change', () => {
+    const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en') || v.lang.startsWith('en-'));
+    currentVoice = voices[voiceSelect.value] || null;
+  });
+
+  muteBtn.addEventListener('click', () => {
+    speakOn = !speakOn;
+    muteBtn.textContent = speakOn ? 'Mute' : 'Unmute';
+    muteBtn.style.background = speakOn ? '#ffb3b3' : '#b3ffda';
+  });
+
+  function speak(text) {
+    if(!speakOn) return;
+    if(!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(safeText(text));
+    if(currentVoice) u.voice = currentVoice;
+    u.rate = 0.95;
+    u.pitch = 1.05;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+
+  function safeText(s){
+    // Very simple sanitization: kid-friendly tone and strip disallowed words
+    const banned = ['bomb','kill','drugs','poison','sex'];
+    let t = s.replace(/\n/g,' ');
+    banned.forEach(b => { t = t.replace(new RegExp(b,'ig'), '***'); });
+    return t;
+  }
+
+  /* --- Chat behaviors --- */
+  function pushMessage(text, who='ai') {
+    const el = document.createElement('div');
+    el.className = 'msg ' + (who === 'ai' ? 'ai' : 'me');
+    if(who === 'ai') {
+      el.innerHTML = `<div class="meta">LumaBuddy · friendly mode</div><div>${escapeHtml(text).replace(/\n/g,'<br>')}</div>`;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+      speak(text);
+    } else {
+      el.textContent = text;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+    }
+  }
+
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function handleSend() {
+    const text = input.value.trim();
+    if(!text) return;
+    pushMessage(text,'me');
+    input.value = '';
+    handleUser(text);
+  }
+
+  send.addEventListener('click', handleSend);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') handleSend(); });
+
+  /* --- Commands & replies --- */
+  function handleUser(text){
+    const t = text.trim();
+    const tl = t.toLowerCase();
+
+    if(tl.startsWith('/draw')) {
+      const prompt = t.slice(5).trim() || 'a cute animal in a sunny field';
+      lastDrawPrompt = prompt;
+      pushMessage(`Okay! I'll draw ${prompt} — look on the right.`, 'ai');
+      generatePictureFromPrompt(prompt);
+      return;
+    }
+    if(tl === '/rhyme') {
+      pushMessage(randomRhyme());
+      return;
+    }
+    if(tl === '/joke') {
+      pushMessage(randomJoke());
+      return;
+    }
+    if(tl === '/help') {
+      pushMessage("Try: /draw a unicorn, /rhyme for a short rhyme, or /joke for a silly joke. I draw happy, simple pictures kids like!");
+      return;
+    }
+
+    // Simple kid-friendly reflections
+    if(tl.includes('how are you') || tl.includes('how r u')) {
+      pushMessage("I'm happy and sparkly! 😊 Want me to draw something fun? Try /draw a rainbow cat.");
+      return;
+    }
+
+    // refusal for dangerous topics
+    if(/bomb|kill|drugs|poison|sex/.test(tl)) {
+      pushMessage("I can't help with that. Let's do something fun and safe — like a drawing or a rhyme!");
+      return;
+    }
+
+    // default friendly reply
+    pushMessage(simpleKidReply(t));
+  }
+
+  function simpleKidReply(text){
+    const templates = [
+      "That sounds like a fun idea! Want me to draw it? Try /draw " + text,
+      "Wow! Tell me more, or ask me to make a picture with /draw",
+      "Nice! I like that. I can also tell a short rhyme — type /rhyme."
+    ];
+    return choose(templates);
+  }
+
+  function randomRhyme(){
+    const rhymes = [
+      "Tiny frog in a polka-dot hat,\njumps on a lily and tips his hat.\nHop and giggle, clap your hands,\nlet's go exploring fairy lands!",
+      "A little star fell in my tea,\nit winked at me and said 'hello, me!'\nWe danced a jig on sugar cubes\nand wore the moon as comfy shoes."
+    ];
+    return choose(rhymes);
+  }
+
+  function randomJoke(){
+    const jokes = [
+      "Why did the teddy bring a suitcase? Because it wanted to go on a bear-venture!",
+      "What do you call a sleeping dinosaur? A dino-snore!",
+      "Why did the banana go to the doctor? It wasn't peeling well!"
+    ];
+    return choose(jokes);
+  }
+
+  function choose(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  /* --- Picture generation (canvas) --- */
+
+  function clearCanvas() {
+    ctx.clearRect(0,0,art.width, art.height);
+  }
+
+  function generatePictureFromPrompt(prompt) {
+    // parse keywords
+    const p = prompt.toLowerCase();
+    // basic scene palette
+    const skyColors = ['#bff0ff','#dff7ff','#ffd6e8'];
+    const sky = choose(skyColors);
+    // seed random-ish from prompt
+    const seed = [...prompt].reduce((s,c)=>s + c.charCodeAt(0), 0);
+    // make background
+    drawBackground(sky);
+    // sun/clouds
+    if(p.includes('sun') || Math.random() > 0.3) drawSun();
+    if(p.includes('cloud') || Math.random() > 0.4) {
+      drawCloud(120,80,1.0);
+      drawCloud(420,70,0.8);
+    }
+    // rainbow if requested
+    if(p.includes('rainbow') || p.includes('rain')) drawRainbow(200,150);
+
+    // ground/grass
+    drawGround();
+
+    // objects: house / tree / animal / cat / dog / unicorn / flower
+    if(p.includes('house') || p.includes('home')) drawHouse(420,250);
+    if(p.includes('tree') || p.includes('forest')) { drawTree(80,260); drawTree(160,270); }
+    if(p.includes('flower')) drawFlower(180,340);
+    if(p.includes('unicorn')) drawUnicorn(260,300);
+    else if(p.includes('cat')) drawAnimal('cat',260,300);
+    else if(p.includes('dog')) drawAnimal('dog',260,300);
+    else if(p.includes('bird')) drawBird(300,120);
+    else { // fallback: smiling animal or character
+      drawAnimal(choose(['cat','dog','bunny']), 260, 300);
+    }
+
+    // add happy text small
+    drawLabel("Made with LumaBuddy ✨");
+  }
+
+  /* Drawing helpers: scales for 640x420 canvas */
+  function drawBackground(skyColor) {
+    const g = ctx.createLinearGradient(0,0,0,art.height);
+    g.addColorStop(0, skyColor);
+    g.addColorStop(1, '#fff');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,art.width, art.height);
+  }
+
+  function drawSun() {
+    const x=520,y=80,r=48;
+    // glow
+    const g = ctx.createRadialGradient(x,y,10,x,y,r+20);
+    g.addColorStop(0,'#fff59d'); g.addColorStop(1,'#ffd66f');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,r+20,0,Math.PI*2); ctx.fill();
+    // center
+    ctx.fillStyle = '#fff3b0';
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    // smile
+    ctx.strokeStyle = '#a65a00'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y+6,18,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+  }
+
+  function drawCloud(cx,cy,scale=1) {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,50*scale,34*scale,0,0,Math.PI*2);
+    ctx.ellipse(cx+40*scale,cy+6*scale,36*scale,26*scale,0,0,Math.PI*2);
+    ctx.ellipse(cx-32*scale,cy+6*scale,34*scale,22*scale,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.04)'; ctx.lineWidth=1;
+    ctx.stroke();
+  }
+
+  function drawRainbow(x,y) {
+    const rings = [
+      '#ff6b6b','#ffb86b','#fff76b','#6bff9b','#6bd8ff','#a98bff'
+    ];
+    let radius = 90;
+    rings.forEach((c,i)=>{
+      ctx.beginPath();
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 14;
+      ctx.arc(x,y, radius - i*14, Math.PI, 2*Math.PI);
+      ctx.stroke();
+    });
+    // clouds at rainbow ends
+    drawCloud(x-90,y+16,0.9); drawCloud(x+90,y+16,0.9);
+  }
+
+  function drawGround() {
+    ctx.fillStyle = '#c9f0d6';
+    ctx.fillRect(0, art.height-100, art.width, 100);
+    // simple grass strokes
+    ctx.strokeStyle = '#9cd58f'; ctx.lineWidth=2;
+    for(let i=0;i<50;i++){
+      const gx = Math.random()*art.width;
+      ctx.beginPath();
+      ctx.moveTo(gx,art.height-40);
+      ctx.lineTo(gx + (Math.random()*8-4), art.height-60 - Math.random()*20);
+      ctx.stroke();
+    }
+  }
+
+  function drawTree(x,y) {
+    // trunk
+    ctx.fillStyle = '#b5703a';
+    ctx.fillRect(x,y,18,60);
+    // leaves
+    ctx.fillStyle = '#59b04a';
+    ctx.beginPath(); ctx.ellipse(x+9,y-10,40,36,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x-10,y+10,36,30,0,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawHouse(x,y) {
+    // base
+    ctx.fillStyle = '#ffd6e0'; ctx.fillRect(x-50,y,120,80);
+    // roof
+    ctx.fillStyle = '#ff9fb7';
+    ctx.beginPath(); ctx.moveTo(x-60,y); ctx.lineTo(x+60,y); ctx.lineTo(x,y-60); ctx.closePath(); ctx.fill();
+    // door
+    ctx.fillStyle = '#6b3b2f'; ctx.fillRect(x-10,y+40,20,40);
+    // window
+    ctx.fillStyle = '#fff'; ctx.fillRect(x+10,y+20,18,18);
+  }
+
+  function drawFlower(x,y) {
+    // stem
+    ctx.strokeStyle = '#2e8b57'; ctx.lineWidth=6;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-30); ctx.stroke();
+    // petals
+    ctx.fillStyle = '#ff9bd6';
+    for(let i=0;i<6;i++){
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(i/6*Math.PI*2)*10, y-40 + Math.sin(i/6*Math.PI*2)*10, 8,12,0,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x,y-40,6,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawAnimal(kind,x,y) {
+    // simple round head + ears + smile
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x,y-40,40,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = (kind==='dog') ? '#f1d7b8' : '#fff3f8';
+    // ears
+    if(kind==='cat'){
+      ctx.beginPath(); ctx.moveTo(x-28,y-70); ctx.lineTo(x-10,y-100); ctx.lineTo(x-2,y-66); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x+28,y-70); ctx.lineTo(x+10,y-100); ctx.lineTo(x+2,y-66); ctx.fill();
+    } else if(kind==='dog'){
+      ctx.fillStyle = '#edd3bb';
+      ctx.beginPath(); ctx.ellipse(x-34,y-42,12,20,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x+34,y-42,12,20,0,0,Math.PI*2); ctx.fill();
+    } else { // bunny
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.ellipse(x-20,y-95,12,34,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x+20,y-95,12,34,0,0,Math.PI*2); ctx.fill();
+    }
+    // eyes
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(x-14,y-44,6,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+14,y-44,6,0,Math.PI*2); ctx.fill();
+    // nose
+    ctx.fillStyle = '#ff7b7b'; ctx.beginPath(); ctx.arc(x,y-30,6,0,Math.PI*2); ctx.fill();
+    // smile
+    ctx.strokeStyle = '#a65a00'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y-20,16,0.2*Math.PI,0.8*Math.PI); ctx.stroke();
+
+    // body simple
+    ctx.fillStyle = (kind==='dog') ? '#f1d7b8' : '#fff3f8';
+    ctx.fillRect(x-30,y-10,60,46);
+    // tail
+    ctx.strokeStyle = '#d99'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(x+30,y+10); ctx.quadraticCurveTo(x+60,y-10,x+80,y+8); ctx.stroke();
+  }
+
+  function drawUnicorn(x,y) {
+    drawAnimal('bunny', x, y); // start with round head
+    // horn
+    ctx.fillStyle = '#ffd37a';
+    ctx.beginPath(); ctx.moveTo(x,y-90); ctx.lineTo(x+8,y-40); ctx.lineTo(x-8,y-40); ctx.closePath(); ctx.fill();
+    // mane
+    const manecolors = ['#ff9bd6','#8bd3ff','#ffd66f','#b9ffb3'];
+    for(let i=0;i<5;i++){
+      ctx.fillStyle = manecolors[i%manecolors.length];
+      ctx.beginPath(); ctx.ellipse(x-30 + i*8, y-60 + i*4, 12,6, -0.5,0,Math.PI*2); ctx.fill();
+    }
+    // add sparkles
+    for(let i=0;i<6;i++){
+      ctx.fillStyle = choose(manecolors);
+      ctx.fillRect(x-80 + i*30, y-20 - (i*6), 4,4);
+    }
+  }
+
+  function drawBird(x,y) {
+    ctx.fillStyle = '#ffd66f';
+    ctx.beginPath(); ctx.ellipse(x,y,22,14,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff9b6b'; ctx.beginPath(); ctx.arc(x+18,y-2,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(x-6,y-4,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x+20,y+6); ctx.lineTo(x+36,y+2); ctx.stroke();
+  }
+
+  function drawLabel(text) {
+    ctx.fillStyle = 'rgba(2,20,40,0.6)';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.fillText(text, 12, art.height - 12);
+  }
+
+  /* --- Utilities: download and regenerate --- */
+  download.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'luma-picture.png';
+    link.href = art.toDataURL('image/png');
+    link.click();
+  });
+
+  regen.addEventListener('click', () => {
+    generatePictureFromPrompt(lastDrawPrompt);
+    pushMessage("I gave it another cute try! ✨");
+  });
+
+  drawBtn.addEventListener('click', () => {
+    // prompt user-friendly action: use lastDrawPrompt or simple prompt
+    const prompt = promptForDrawing() || lastDrawPrompt;
+    lastDrawPrompt = prompt;
+    pushMessage(`Drawing: ${prompt}`);
+    generatePictureFromPrompt(prompt);
+  });
+
+  function promptForDrawing(){
+    const p = window.prompt("What would you like me to draw? (try: a rainbow cat)", "a rainbow cat");
+    if(!p) return null;
+    return p;
+  }
+
+  /* --- Initial draw --- */
+  generatePictureFromPrompt(lastDrawPrompt);
+
+  /* --- Helper functions --- */
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function choose(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  // small startup: greet
+  setTimeout(() => speak("Hello! I'm LumaBuddy. I can draw a picture or tell a rhyme. Try saying, draw a unicorn."), 600);
+
+})();
+</script>
+</body>
+</html>
